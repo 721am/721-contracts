@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 // https://github.com/OpenZeppelin/openzeppelin-contracts/commit/8e0296096449d9b1cd7c5631e917330635244c37
 import 'openzeppelin-solidity/contracts/cryptography/ECDSA.sol';
-import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
+import './NoSpam721.sol';
 import './IERC2981.sol';
-import './UserData.sol';
 import './BaseRelayRecipient.sol';
+import './StringParser.sol';
 
 pragma experimental ABIEncoderV2;
 pragma solidity 0.6.12;
 
-contract Like is UserData, IERC2981, BaseRelayRecipient {
+contract Like is NoSpam721, IERC2981, BaseRelayRecipient {
 
     string private constant ERROR_INVALID_INPUTS = "Each field must have the same number of values";
 
@@ -47,8 +47,8 @@ contract Like is UserData, IERC2981, BaseRelayRecipient {
         ));
         address minter = ECDSA.recover(minterHash, minterSignature);
 
-        uint256 tokenID = _asciiBase10ToUint(encodedTokenID);
-        address tokenContract = _asciiBase16ToAddress(encodedContract);
+        uint256 tokenID = StringParser._asciiBase10ToUint(encodedTokenID);
+        address tokenContract = StringParser._asciiBase16ToAddress(encodedContract);
 
         string memory tokenURI = ERC721(tokenContract).tokenURI(tokenID);
 
@@ -106,44 +106,6 @@ contract Like is UserData, IERC2981, BaseRelayRecipient {
         bytes32 tokenRef
     ) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(minter, tokenRef)));
-    }
-
-    function _asciiBase16ToAddress(
-        string memory ascii
-    ) internal pure returns (address) {
-        uint256 result = 0;
-        bytes memory asciiBytes = bytes(ascii);
-        require(asciiBytes.length > 2, "Invalid Address");
-        for (uint i = 2; i < asciiBytes.length; i++) {
-            uint256 char = uint256(uint8(asciiBytes[i]));
-            if (char >= 48 && char <= 57) {
-                char -= 48; // 0-9
-            }
-            else if (char >= 65 && char <= 70) {
-                char -= 55; // A-F
-            }
-            else if (char >= 97 && char <= 102) {
-                char -= 87; // a-f
-            }
-            else {
-                revert("Invalid address");
-            }
-            result = result.mul(16).add(char);
-        }
-        return address(result);
-    }
-
-    function _asciiBase10ToUint(
-        string memory ascii
-    ) internal pure returns (uint256) {
-        uint256 result = 0;
-        bytes memory asciiBytes = bytes(ascii);
-        for (uint i = 0; i < asciiBytes.length; i++) {
-            uint256 digit = uint256(uint8(asciiBytes[i])) - 48;
-            require(digit >= 0 && digit <= 9, "Token id not formatted correctly");
-            result = result.mul(10).add(digit);
-        }
-        return result;
     }
     /* -- END minting helpers -- */
 
